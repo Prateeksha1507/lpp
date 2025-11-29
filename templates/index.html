@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Shortest Path using BnB ILP</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    /* Additional page styling */
+    #graph {
+      width: 100%;
+      height: 500px;
+      border: 1px solid #ccc;
+      background-color: #fafafa;
+      border-radius: 8px;
+      overflow: visible;
+    }
+
+    /* Make output stand out */
+    #output {
+      margin-top: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #1d3557;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>Shortest Path (Branch & Bound ILP Solver)</h2>
+
+    <label>Adjacency matrix (space separated, 0 = no edge)</label>
+    <textarea id="matrix" rows="6" placeholder="0 4 2 0&#10;0 0 5 10&#10;0 0 0 3&#10;0 0 0 0"></textarea>
+
+    <label>Start node (0-based)</label>
+    <input id="start" placeholder="e.g., 0">
+
+    <label>End node (0-based)</label>
+    <input id="end" placeholder="e.g., 3">
+
+    <button id="solveBtn">Find Shortest Path (ILP)</button>
+
+    <div id="output"></div>
+
+    <svg id="graph"></svg>
+  </div>
+
+<script>
+async function parseMatrix() {
+  const raw = document.getElementById('matrix').value.trim();
+  const rows = raw.split('\n').map(r => r.trim()).filter(r => r.length);
+  return rows.map(r => r.split(/\s+/).map(x => {
+    const v = Number(x);
+    return isNaN(v) ? 0 : v;
+  }));
+}
+
+// Force-directed layout with directed edges
+function drawGraph(matrix, path) {
+  const svg = document.getElementById('graph');
+  svg.innerHTML = '';
+  const n = matrix.length;
+  const W = svg.clientWidth;
+  const H = svg.clientHeight;
+  const nodeRadius = 20;
+
+  // Initialize random positions
+  const nodes = [];
+  for (let i = 0; i < n; i++) {
+    nodes.push({x: Math.random()*W*0.8 + W*0.1, y: Math.random()*H*0.8 + H*0.1, dx:0, dy:0});
+  }
+
+  const isOnPath = (u,v) => path?.some((p,i)=> i<path.length-1 && path[i]===u && path[i+1]===v);
+
+  // Simple force-directed simulation
+  const iterations = 150;
+  const k = Math.sqrt(W*H/n);
+  for (let iter=0; iter<iterations; iter++){
+    nodes.forEach(node => { node.dx=0; node.dy=0; });
+    for (let i=0;i<n;i++){
+      for (let j=i+1;j<n;j++){
+        const dx = nodes[j].x - nodes[i].x;
+        const dy = nodes[j].y - nodes[i].y;
+        const dist = Math.hypot(dx,dy) || 0.01;
+        const rep = k*k/dist;
+        const fx = rep*dx/dist;
+        const fy = rep*dy/dist;
+        nodes[i].dx -= fx; nodes[i].dy -= fy;
+        nodes[j].dx += fx; nodes[j].dy += fy;
+      }
+    }
+    for (let i=0;i<n;i++){
+      for (let j=0;j<n;j++){
+        if(matrix[i][j] && matrix[i][j]!==0){
+          const dx = nodes[j].x - nodes[i].x;
+          const dy = nodes[j].y - nodes[i].y;
+          const dist = Math.hypot(dx,dy) || 0.01;
+          const force = (dist*dist)/(k);
+          const fx = force*dx/dist;
+          const fy = force*dy/dist;
+          nodes[i].dx += fx; nodes[i].dy += fy;
+          nodes[j].dx -= fx; nodes[j].dy -= fy;
+        }
+      }
+    }
+    nodes.forEach(node=>{
+      node.x += Math.max(-5, Math.min(5,node.dx));
+      node.y += Math.max(-5, Math.min(5,node.dy));
+      node.x = Math.max(nodeRadius, Math.min(W-nodeRadius,node.x));
+      node.y = Math.max(nodeRadius, Math.min(H-nodeRadius,node.y));
+    });
+  }
+
+  // Arrowhead
+  svg.innerHTML += `
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
+        <path d="M0,0 L10,5 L0,10 Z" fill="#111"/>
+      </marker>
+    </defs>
+  `;
+
+  // Draw edges
+  for(let i=0;i<n;i++){
+    for(let j=0;j<n;j++){
+      if(matrix[i][j] && matrix[i][j]!==0){
+        const u = nodes[i], v = nodes[j];
+        const dx = v.x - u.x, dy = v.y - u.y;
+        const len = Math.hypot(dx,dy);
+        const offsetX = (dx/len)*nodeRadius;
+        const offsetY = (dy/len)*nodeRadius;
+        const startX = u.x + offsetX;
+        const startY = u.y + offsetY;
+        const endX = v.x - offsetX;
+        const endY = v.y - offsetY;
+
+        const onPath = isOnPath(i,j);
+        const edge = document.createElementNS("http://www.w3.org/2000/svg","path");
+        edge.setAttribute("d", `M${startX},${startY} L${endX},${endY}`);
+        edge.setAttribute("stroke", onPath?"#ff2c2c":"#333");
+        edge.setAttribute("stroke-width", onPath?"4":"2");
+        edge.setAttribute("marker-end","url(#arrow)");
+        edge.setAttribute("fill","none");
+        svg.appendChild(edge);
+
+        const label = document.createElementNS("http://www.w3.org/2000/svg","text");
+        label.setAttribute("x",(startX+endX)/2);
+        label.setAttribute("y",(startY+endY)/2 - 5);
+        label.setAttribute("text-anchor","middle");
+        label.setAttribute("font-size","12");
+        label.textContent = matrix[i][j];
+        svg.appendChild(label);
+      }
+    }
+  }
+
+  // Draw nodes
+  nodes.forEach((node,i)=>{
+    const circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    circle.setAttribute("cx",node.x);
+    circle.setAttribute("cy",node.y);
+    circle.setAttribute("r",nodeRadius);
+    circle.setAttribute("fill", path && path.includes(i) ? "#ffd6d6":"#e7f0ff");
+    circle.setAttribute("stroke","#333");
+    svg.appendChild(circle);
+
+    const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+    text.setAttribute("x",node.x);
+    text.setAttribute("y",node.y+5);
+    text.setAttribute("text-anchor","middle");
+    text.textContent = i;
+    text.setAttribute("font-weight","bold");
+    svg.appendChild(text);
+  });
+}
+
+// Button click event
+document.getElementById('solveBtn').addEventListener('click', async () => {
+  const mat = await parseMatrix();
+  const start = Number(document.getElementById('start').value);
+  const end = Number(document.getElementById('end').value);
+  document.getElementById('output').textContent = 'Solving... (backend ILP Branch & Bound)';
+
+  try {
+    const resp = await fetch('/solve', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ adj: mat, start: start, end: end })
+    });
+    const data = await resp.json();
+    if(data.path === null){
+      document.getElementById('output').textContent = data.message || 'No path found';
+      drawGraph(mat, []);
+    } else {
+      document.getElementById('output').innerHTML = `
+        Shortest Path: ${data.path.join(' → ')} <br> Cost: ${data.cost}
+      `;
+      drawGraph(mat, data.path);
+    }
+  } catch(err){
+    document.getElementById('output').textContent = 'Error: '+err;
+    drawGraph(mat, []);
+  }
+});
+
+// Initial empty graph
+parseMatrix().then(m => drawGraph(m, []));
+</script>
+</body>
+</html>
