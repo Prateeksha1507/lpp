@@ -77,6 +77,11 @@
 
     // Force-directed layout with directed edges
     function drawGraph(matrix, path) {
+      function isBidirectional(u, v) {
+        return matrix[v][u] && matrix[v][u] !== 0;
+      }
+
+
       const svg = document.getElementById('graph');
       svg.innerHTML = '';
       const n = matrix.length;
@@ -143,10 +148,21 @@
       // Arrowhead
       svg.innerHTML += `
     <defs>
-      <marker id="arrow" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
-        <path d="M0,0 L10,5 L0,10 Z" fill="#111"/>
-      </marker>
-    </defs>
+
+  <marker id="arrow-normal" markerWidth="10" markerHeight="10"
+          refX="10" refY="5" orient="auto"
+          markerUnits="userSpaceOnUse">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#333"/>
+  </marker>
+
+  <marker id="arrow-path" markerWidth="10" markerHeight="10"
+          refX="10" refY="5" orient="auto"
+          markerUnits="userSpaceOnUse">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#ff2c2c"/>
+  </marker>
+
+</defs>
+
   `;
 
       // Draw edges
@@ -165,16 +181,45 @@
 
             const onPath = isOnPath(i, j);
             const edge = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            edge.setAttribute("d", `M${startX},${startY} L${endX},${endY}`);
+
+            const bidi = isBidirectional(i, j);
+            let d;
+
+            if (bidi) {
+              const mx = (startX + endX) / 2;
+              const my = (startY + endY) / 2;
+              const curve = 25;
+
+              const nx = -(dy) / len;
+              const ny = dx / len;
+
+              const cx = mx + nx * curve;
+              const cy = my + ny * curve;
+
+              d = `M${startX},${startY} Q${cx},${cy} ${endX},${endY}`;
+            } else {
+              d = `M${startX},${startY} L${endX},${endY}`;
+            }
+
+            edge.setAttribute("d", d);
+
             edge.setAttribute("stroke", onPath ? "#ff2c2c" : "#333");
-            edge.setAttribute("stroke-width", onPath ? "4" : "2");
-            edge.setAttribute("marker-end", "url(#arrow)");
+            edge.setAttribute("stroke-width", "2");
+            edge.setAttribute("marker-end", onPath ? "url(#arrow-path)" : "url(#arrow-normal)");
+
             edge.setAttribute("fill", "none");
             svg.appendChild(edge);
 
             const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            label.setAttribute("x", (startX + endX) / 2);
-            label.setAttribute("y", (startY + endY) / 2 - 5);
+            if (isBidirectional(i, j)) {
+              const offset = 18;
+              label.setAttribute("x", (startX + endX) / 2 + (-dy / len) * offset);
+              label.setAttribute("y", (startY + endY) / 2 + (dx / len) * offset);
+            } else {
+              label.setAttribute("x", (startX + endX) / 2);
+              label.setAttribute("y", (startY + endY) / 2 - 5);
+            }
+
             label.setAttribute("text-anchor", "middle");
             label.setAttribute("font-size", "12");
             label.textContent = matrix[i][j];
