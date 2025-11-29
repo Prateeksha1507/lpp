@@ -1,71 +1,143 @@
-body {
-  font-family: "Segoe UI", Arial, sans-serif;
-  background: linear-gradient(120deg, #eef2ff, #f8fbffd1);
-  margin: 0;
-  padding: 0;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  font-family: Inter, system-ui, sans-serif;
 }
 
-.wrap {
-  max-width: 1050px;
-  margin: 30px auto;
-  padding: 20px 25px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+body {
+  margin: 0;
+  height: 100vh;
+  background: linear-gradient(135deg, #dbeafe, #eef2ff);
+}
+
+.page {
+  display: flex;
+  gap: 20px;
+  padding: 18px;
+  height: 100vh;
+}
+
+.panel {
+  background: white;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.inputs {
+  width: 34%;
+  min-width: 320px;
+  background: linear-gradient(180deg, #ffffff, #f9fbff);
+}
+
+.graph-area {
+  flex-grow: 1;
+  background: linear-gradient(180deg, #ffffff, #eef2ff);
+  border-radius: 18px;
 }
 
 h2 {
   text-align: center;
-  color: #1d3557;
+  margin-bottom: 20px;
+  font-weight: 700;
+  color: #1e3a8a;
+  letter-spacing: 0.5px;
 }
 
-textarea, input {
-  width: 100%;
-  padding: 10px;
-  font-size: 15px;
-  margin-top: 6px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+.graph-area h3 {
+  text-align: center;
+  margin-bottom: 8px;
+  color: #334155;
 }
 
 label {
   margin-top: 12px;
-  display: block;
-  font-weight: bold;
-  color: #444;
+  font-weight: 600;
+  color: #334155;
+}
+
+textarea,
+input {
+  margin-top: 6px;
+  width: 100%;
+  padding: 11px;
+  border-radius: 10px;
+  border: 1px solid #c7d2fe;
+  font-size: 14px;
+  background: #f8fbff;
+  transition: 0.2s ease;
+}
+
+textarea {
+  margin:auto;
+  resize: vertical;
+  min-height: 250px;   /* increase height */
+  font-family: monospace;
+  font-size: 15px;     /* slightly bigger text */
+}
+
+
+textarea:focus,
+input:focus {
+  outline: none;
+  background: white;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.25);
+}
+
+.row {
+  display: flex;
+  gap: 10px;
 }
 
 button {
-  width: 100%;
-  padding: 12px;
-  font-weight: bold;
-  font-size: 16px;
-  background: linear-gradient(90deg, #1d3557, #457b9d);
-  color: white;
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 12px;
   border: none;
-  border-radius: 8px;
-  margin-top: 16px;
+  background: linear-gradient(145deg, #2563eb, #1d4ed8);
+  color: white;
+  letter-spacing: 0.5px;
+  font-weight: 700;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
 button:hover {
-  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37,99,235,0.45);
+}
+
+button:active {
+  transform: scale(0.97);
 }
 
 #output {
   margin-top: 14px;
-  font-size: 16px;
-  color: #1d3557;
-  text-align: center;
+  background: linear-gradient(135deg, #eff6ff, #e0e7ff);
+  padding: 12px;
+  border-radius: 10px;
+  border-left: 5px solid #2563eb;
+  font-weight: 600;
+  color: #1e3a8a;
+  min-height: 42px;
 }
 
-svg {
-  width: 100%;
-  height: 450px;
-  background: #ffffff;
-  border-radius: 8px;
-  margin-top: 16px;
-  border: 1px solid #ccc;
+#graph {
+  margin-top: 10px;
+  flex-grow: 1;
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #c7d2fe;
+}
+
+text {
+  font-size: 13px;
+  font-weight: 600;
+  fill: #1f2933;
 }
 
 circle {
@@ -73,20 +145,25 @@ circle {
 }
 
 circle:hover {
-  fill: #ffd166 !important;
+  fill: #fde68a !important;
+  cursor: pointer;
 }
 
-path.edge {
-  stroke-width: 2;
-  fill: none;
+path {
+  transition: 0.2s;
 }
 
-path.shortest {
-  stroke: red;
-  stroke-width: 4;
-}
+@media (max-width: 920px) {
+  .page {
+    flex-direction: column;
+    height: auto;
+  }
 
-text {
-  font-family: monospace;
-  fill: #111;
+  .inputs {
+    width: 100%;
+  }
+
+  #graph {
+    height: 420px;
+  }
 }
